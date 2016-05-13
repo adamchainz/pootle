@@ -37,8 +37,10 @@ def _test_config_bad_create(create_func):
 
 
 def _test_config_ob(conf, **kwargs):
-    conf.save()
-    conf = Config.objects.get(id=conf.id)
+    conf = Config.objects.get(
+        content_type=kwargs["content_type"],
+        object_pk=kwargs["object_pk"])
+
     for k, v in kwargs.items():
         if isinstance(v, tuple):
             v = list(v)
@@ -86,7 +88,12 @@ def _test_config_create(create_func):
 
 
 def _test_config_clear(**kwargs):
-    conf = Config.objects.set_config(**kwargs)
+    Config.objects.set_config(**kwargs)
+    if kwargs.get("model"):
+        conf = Config.objects.config_for(
+            kwargs["model"]).get(key=kwargs["key"])
+    else:
+        conf = Config.objects.site_config().get(key=kwargs["key"])
     assert conf.pk in Config.objects.values_list("pk", flat=True)
     Config.objects.clear_config(**kwargs)
     assert conf.pk not in Config.objects.values_list("pk", flat=True)
